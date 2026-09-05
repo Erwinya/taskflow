@@ -1,0 +1,13 @@
+{
+  "tasks": {
+    "prep": {
+      "action": "echo",
+      "config": { "message": "prepare" }
+    },
+    "sum": {
+      "action": "add",
+      "depends_on": ["prep"],
+      "config": { "a": 2, "b": 3 }
+    }
+  }
+}

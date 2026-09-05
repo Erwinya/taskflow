@@ -4,14 +4,26 @@ Tiny dependency-aware task runner (DAG) with built-in actions such as `echo`, `a
 
 ## Status
 
-Project scaffolding is in place. Flow loading, topo-sort, builtins, and sample flows will land in follow-up commits.
+Flow JSON loading and `depends_on` validation are in place. Topo-sort, builtins, and execution reports will land in follow-up commits.
 
-## Goals
+## Run (current)
 
-- Load a JSON flow of named tasks and `depends_on` edges
-- Detect missing dependencies and cycles
-- Run tasks in topological order
-- Emit a clear text or JSON result report
+```powershell
+python src\taskflow.py --file samples\flow.json
+```
+
+Validates that every `depends_on` entry refers to a known task name.
+
+## Flow shape
+
+```json
+{
+  "tasks": {
+    "prep": { "action": "echo", "config": { "message": "hi" } },
+    "work": { "action": "add", "depends_on": ["prep"], "config": { "a": 1, "b": 2 } }
+  }
+}
+```
 
 ## Requirements
 
