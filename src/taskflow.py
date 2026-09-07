@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Load a task-flow JSON file and validate depends_on references."""
+"""Load a task-flow JSON file, validate depends_on, and compute run order."""
 from __future__ import annotations
 
 import argparse
 import json
 import sys
+from collections import defaultdict, deque
 from pathlib import Path
 from typing import Any
 
@@ -28,8 +29,30 @@ def load_flow(path: Path) -> dict[str, Any]:
     return data
 
 
+def topo_sort(tasks: dict[str, dict[str, Any]]) -> list[str]:
+    indegree = {name: 0 for name in tasks}
+    graph: dict[str, list[str]] = defaultdict(list)
+    for name, spec in tasks.items():
+        for dep in spec.get("depends_on", []):
+            graph[dep].append(name)
+            indegree[name] += 1
+
+    q = deque([n for n, d in indegree.items() if d == 0])
+    order: list[str] = []
+    while q:
+        n = q.popleft()
+        order.append(n)
+        for nxt in graph[n]:
+            indegree[nxt] -= 1
+            if indegree[nxt] == 0:
+                q.append(nxt)
+    if len(order) != len(tasks):
+        raise ValueError("cycle detected in task dependencies")
+    return order
+
+
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Validate a task-flow JSON file")
+    parser = argparse.ArgumentParser(description="Order tasks in a dependency-aware flow")
     parser.add_argument("--file", required=True, help="Flow JSON file")
     args = parser.parse_args(argv)
 
@@ -40,16 +63,13 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         flow = load_flow(path)
+        order = topo_sort(flow["tasks"])
     except (OSError, json.JSONDecodeError, ValueError) as ex:
         print(f"error: {ex}", file=sys.stderr)
         return 2
 
-    tasks = flow["tasks"]
-    print(f"ok tasks={len(tasks)} file={path}")
-    for name, spec in tasks.items():
-        deps = spec.get("depends_on", [])
-        dep_txt = ",".join(deps) if deps else "-"
-        print(f"  {name} depends_on=[{dep_txt}]")
+    print(f"ok tasks={len(order)} file={path}")
+    print("order: " + " -> ".join(order))
     return 0
 
 

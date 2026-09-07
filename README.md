@@ -4,7 +4,8 @@ Tiny dependency-aware task runner (DAG) with built-in actions such as `echo`, `a
 
 ## Status
 
-Flow JSON loading and `depends_on` validation are in place. Topo-sort, builtins, and execution reports will land in follow-up commits.
+Flow loading, `depends_on` validation, topological ordering, and cycle detection are in place.  
+Builtin execution and result reports will land in follow-up commits.
 
 ## Run (current)
 
@@ -12,7 +13,7 @@ Flow JSON loading and `depends_on` validation are in place. Topo-sort, builtins,
 python src\taskflow.py --file samples\flow.json
 ```
 
-Validates that every `depends_on` entry refers to a known task name.
+Prints a valid run order, or exits with an error if a dependency is missing or a cycle exists.
 
 ## Flow shape
 
