@@ -1,13 +1,31 @@
 #!/usr/bin/env python3
-"""Load a task-flow JSON file, validate depends_on, and compute run order."""
+"""Run a dependency-aware task flow with built-in actions."""
 from __future__ import annotations
 
 import argparse
 import json
 import sys
+import time
 from collections import defaultdict, deque
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
+
+
+@dataclass
+class TaskResult:
+    name: str
+    ok: bool
+    elapsed_ms: float
+    output: str | None = None
+    error: str | None = None
+
+
+BUILTINS: dict[str, Callable[[dict[str, Any]], str]] = {
+    "echo": lambda cfg: str(cfg.get("message", "")),
+    "add": lambda cfg: str(int(cfg.get("a", 0)) + int(cfg.get("b", 0))),
+    "sleep_ms": lambda cfg: (time.sleep(float(cfg.get("ms", 0)) / 1000.0) or "slept"),
+}
 
 
 def load_flow(path: Path) -> dict[str, Any]:
@@ -51,8 +69,29 @@ def topo_sort(tasks: dict[str, dict[str, Any]]) -> list[str]:
     return order
 
 
+def run_flow(flow: dict[str, Any]) -> list[TaskResult]:
+    tasks = flow["tasks"]
+    order = topo_sort(tasks)
+    results: list[TaskResult] = []
+    for name in order:
+        spec = tasks[name]
+        action = spec.get("action")
+        if action not in BUILTINS:
+            raise ValueError(f"unsupported action '{action}' in task '{name}'")
+        started = time.perf_counter()
+        try:
+            output = BUILTINS[action](spec.get("config", {}) or {})
+            elapsed = (time.perf_counter() - started) * 1000.0
+            results.append(TaskResult(name, True, round(elapsed, 2), output=output))
+        except Exception as ex:  # noqa: BLE001
+            elapsed = (time.perf_counter() - started) * 1000.0
+            results.append(TaskResult(name, False, round(elapsed, 2), error=str(ex)))
+            break
+    return results
+
+
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Order tasks in a dependency-aware flow")
+    parser = argparse.ArgumentParser(description="Run a dependency-aware task flow")
     parser.add_argument("--file", required=True, help="Flow JSON file")
     args = parser.parse_args(argv)
 
@@ -63,14 +102,16 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         flow = load_flow(path)
-        order = topo_sort(flow["tasks"])
+        results = run_flow(flow)
     except (OSError, json.JSONDecodeError, ValueError) as ex:
         print(f"error: {ex}", file=sys.stderr)
         return 2
 
-    print(f"ok tasks={len(order)} file={path}")
-    print("order: " + " -> ".join(order))
-    return 0
+    for r in results:
+        flag = "OK" if r.ok else "FAIL"
+        detail = r.error if r.error else r.output
+        print(f"[{flag}] {r.name} {r.elapsed_ms}ms :: {detail}")
+    return 0 if results and all(r.ok for r in results) else 1
 
 
 if __name__ == "__main__":
