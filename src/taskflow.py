@@ -7,7 +7,7 @@ import json
 import sys
 import time
 from collections import defaultdict, deque
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Callable
 
@@ -93,6 +93,7 @@ def run_flow(flow: dict[str, Any]) -> list[TaskResult]:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Run a dependency-aware task flow")
     parser.add_argument("--file", required=True, help="Flow JSON file")
+    parser.add_argument("--json", action="store_true", help="Emit execution report as JSON")
     args = parser.parse_args(argv)
 
     path = Path(args.file)
@@ -107,10 +108,21 @@ def main(argv: list[str] | None = None) -> int:
         print(f"error: {ex}", file=sys.stderr)
         return 2
 
-    for r in results:
-        flag = "OK" if r.ok else "FAIL"
-        detail = r.error if r.error else r.output
-        print(f"[{flag}] {r.name} {r.elapsed_ms}ms :: {detail}")
+    if args.json:
+        print(
+            json.dumps(
+                {
+                    "results": [asdict(r) for r in results],
+                    "ok": bool(results) and all(r.ok for r in results),
+                },
+                indent=2,
+            )
+        )
+    else:
+        for r in results:
+            flag = "OK" if r.ok else "FAIL"
+            detail = r.error if r.error else r.output
+            print(f"[{flag}] {r.name} {r.elapsed_ms}ms :: {detail}")
     return 0 if results and all(r.ok for r in results) else 1
 
 

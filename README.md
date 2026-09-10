@@ -2,22 +2,18 @@
 
 Tiny dependency-aware task runner (DAG) with built-in actions: `echo`, `add`, and `sleep_ms`.
 
-## Status
-
-Flow loading, dependency ordering, cycle detection, and builtin execution are in place.  
-JSON result reports and richer samples will land in follow-up commits.
-
 ## Run
 
 ```powershell
 python src\taskflow.py --file samples\flow.json
+python src\taskflow.py --file samples\flow.json --json
 ```
 
 ## Builtins
 
 | Action | Config | Result |
 |--------|--------|--------|
-| `echo` | `message` | prints/returns the message |
+| `echo` | `message` | returns the message |
 | `add` | `a`, `b` | integer sum |
 | `sleep_ms` | `ms` | sleeps, then returns `slept` |
 
@@ -33,6 +29,14 @@ Execution stops on the first failing task.
   }
 }
 ```
+
+`samples/flow.json` is a short four-step pipeline (`prep → wait → sum → done`).
+
+## Exit codes
+
+- `0` — all tasks succeeded
+- `1` — a task failed
+- `2` — invalid flow / missing file
 
 ## Requirements
 

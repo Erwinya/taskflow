@@ -2,12 +2,22 @@
   "tasks": {
     "prep": {
       "action": "echo",
-      "config": { "message": "prepare" }
+      "config": { "message": "prepare workspace" }
+    },
+    "wait": {
+      "action": "sleep_ms",
+      "depends_on": ["prep"],
+      "config": { "ms": 5 }
     },
     "sum": {
       "action": "add",
-      "depends_on": ["prep"],
+      "depends_on": ["wait"],
       "config": { "a": 2, "b": 3 }
+    },
+    "done": {
+      "action": "echo",
+      "depends_on": ["sum"],
+      "config": { "message": "pipeline complete" }
     }
   }
 }
