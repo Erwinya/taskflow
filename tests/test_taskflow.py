@@ -1,9 +1,13 @@
 import json
+import sys
 import tempfile
 import unittest
 from pathlib import Path
 
-import taskflow
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "src"))
+
+import taskflow  # noqa: E402
 
 
 class TaskflowValidationTests(unittest.TestCase):
