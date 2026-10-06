@@ -1,4 +1,4 @@
-﻿# taskflow
+# taskflow
 
 Tiny dependency-aware task runner (DAG) with built-in actions: `echo`, `add`, and `sleep_ms`.
 
@@ -37,6 +37,13 @@ Execution stops on the first failing task.
 - `0` — all tasks succeeded
 - `1` — a task failed
 - `2` — invalid flow / missing file
+
+After a run in Windows PowerShell, inspect the process exit code with `$LASTEXITCODE`:
+
+```powershell
+python src\taskflow.py --file samples\flow.json
+if ($LASTEXITCODE -ne 0) { Write-Error "taskflow failed with exit code $LASTEXITCODE" }
+```
 
 ## Requirements
 
