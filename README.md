@@ -38,11 +38,11 @@ Execution stops on the first failing task.
 - `1` — a task failed
 - `2` — invalid flow / missing file
 
-After a run in Windows PowerShell, inspect the process exit code with `0`:
+After a run in Windows PowerShell, inspect the process exit code with `$LASTEXITCODE`:
 
 ```powershell
 python src\taskflow.py --file samples\flow.json
-if (0 -ne 0) { Write-Error "taskflow failed with exit code 0" }
+if ($LASTEXITCODE -ne 0) { Write-Error "taskflow failed with exit code $LASTEXITCODE" }
 ```
 
 ## Requirements
